@@ -66,8 +66,30 @@ vector<int> LinuxParser::Pids() {
   return pids;
 }
 
-// TODO: Read and return the system memory utilization
-float LinuxParser::MemoryUtilization() { return 0.0; }
+// Read and return the system memory utilization
+// Returns the percentage of memory utilized as a float (so 50% used would return 0.5)
+// Calculates usage like the `free` command: total memory - free memory - buffer - cache
+float LinuxParser::MemoryUtilization() {
+  string line, key, value;
+  vector<string> values;
+  std::ifstream stream(kProcDirectory + kMeminfoFilename);
+  if (stream.is_open()) {
+
+    while(std::getline(stream, line)) {
+      std::istringstream linestream(line);
+      linestream >> key >> value;
+      values.push_back(value);
+      if (key == "Cached:") {
+          // Only need the first four lines, so getta outta here once we hit this line
+          break;
+      }
+    }
+  }
+
+  int intMemTotal = std::stoi(values[0]);
+
+  return float(intMemTotal - std::stoi(values[1]) - std::stoi(values[2]) - std::stoi(values[3])) / intMemTotal;
+}
 
 // TODO: Read and return the system uptime
 long LinuxParser::UpTime() {
