@@ -196,17 +196,22 @@ string LinuxParser::User(int pid) {
   return string();
 }
 
-// TODO: Read and return the uptime of a process
+// Read and return the uptime of a process
 long LinuxParser::UpTime(int pid) {
-  string procDirectory = string();
-  procDirectory = pid;
-  string uptime;
-  string line;
-  std::ifstream stream(kProcDirectory + procDirectory + kUptimeFilename);
+  string line, uptime, value;
+  int const index_location_of_uptime_value = 22; // Indexed starting at 1, not 0
+  int i = 1;
+
+  std::ifstream stream(kProcDirectory + "/" + to_string(pid) + kStatFilename);
   if (stream.is_open()) {
     std::getline(stream, line);
     std::istringstream linestream(line);
-    linestream >> uptime;
+    while(linestream >> value) {
+      if (i == index_location_of_uptime_value) {
+        return std::stoll(value) / sysconf(_SC_CLK_TCK);
+      }
+      i++;
+    }
   }
-  return std::stoll(uptime);
+  return 0.0; // shouldn't get here, but just in case
 }
