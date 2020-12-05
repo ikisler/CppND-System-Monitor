@@ -17,10 +17,17 @@ using std::vector;
 // Return the system's CPU
 Processor& System::Cpu() { return cpu_; }
 
-// TODO: Return a container composed of the system's processes
-vector<Process>& System::Processes() { return processes_; }
+// Return a container composed of the system's processes
+vector<Process>& System::Processes() {
+  vector<int> pids = LinuxParser::Pids();
 
-// TODO: Return the system's kernel identifier (string)
+  for (auto pid : pids) {
+    processes_.push_back(Process(pid));
+  }
+  return processes_;
+}
+
+// Return the system's kernel identifier (string)
 std::string System::Kernel() {
 // consider saving this and returning the cached value
   return LinuxParser::Kernel();

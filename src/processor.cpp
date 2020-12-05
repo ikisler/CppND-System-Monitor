@@ -56,7 +56,4 @@ float Processor::Utilization() {
   old_non_idle_ = new_non_idle;
 
   return (total_difference - idle_difference) / total_difference;
-
-
-return 0.0;
 }
