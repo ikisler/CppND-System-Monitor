@@ -17,8 +17,17 @@ int Process::Pid() {
   return pid_;
 }
 
-// TODO: Return this process's CPU utilization
-float Process::CpuUtilization() { return 0; }
+// Return this process's CPU utilization
+/*
+  NOTE!
+  The algorithm to calculate this is derived from the guide here:
+  https://stackoverflow.com/questions/16726779/how-do-i-get-the-total-cpu-usage-of-an-application-from-proc-pid-stat/16736599#16736599
+
+  Retrieved 12/05/2020
+*/
+float Process::CpuUtilization() {
+  return LinuxParser::ProcessCpuTimeUsage(pid_) / UpTime();
+}
 
 // Return the command that generated this process
 string Process::Command() {

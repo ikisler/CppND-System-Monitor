@@ -105,6 +105,7 @@ long LinuxParser::UpTime() {
 
 // Read and return CPU utilization
 vector<string> LinuxParser::CpuUtilization() {
+// investigate CPUStates enum
   vector<string> values;
   string value, line;
   std::ifstream stream(kProcDirectory + kStatFilename);
@@ -118,6 +119,37 @@ vector<string> LinuxParser::CpuUtilization() {
     }
   }
   return values;
+}
+
+// Gets and sums values used for calculating CPU usage
+// utime
+// stime
+// cutime
+// cstime
+// Returns a float measured in SECONDS not clockticks
+float LinuxParser::ProcessCpuTimeUsage(int pid) {
+  string value, line;
+  int i = 0;
+  float sum;
+  std::ifstream stream(kProcDirectory + "/" + to_string(pid) + kStatFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+    std::istringstream linestream(line);
+    while(linestream >> value) {
+      // Need to get the 14 - 17th values from the file
+      if (i >= 13) {
+        sum += stof(value);
+      }
+
+      // Not interested in any values after the 16th
+      if (i == 16) {
+        break;
+      }
+      i++;
+    }
+  }
+
+  return sum / sysconf(_SC_CLK_TCK);
 }
 
 // Read and return the total number of processes
@@ -163,8 +195,10 @@ string LinuxParser::Command(int pid) {
 }
 
 // TODO: Read and return the memory used by a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Ram(int pid [[maybe_unused]]) { return string(); }
+string LinuxParser::Ram(int pid) {
+  return to_string(pid);
+  return string();
+}
 
 // Read and return the user ID associated with a process
 string LinuxParser::Uid(int pid) {
@@ -214,7 +248,7 @@ long LinuxParser::UpTime(int pid) {
     std::istringstream linestream(line);
     while(linestream >> value) {
       if (i == index_location_of_uptime_value) {
-        return std::stoll(value) / sysconf(_SC_CLK_TCK);
+        return LinuxParser::UpTime() - (std::stoll(value) / sysconf(_SC_CLK_TCK));
       }
       i++;
     }
