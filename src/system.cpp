@@ -21,6 +21,7 @@ Processor& System::Cpu() { return cpu_; }
 vector<Process>& System::Processes() {
   vector<int> pids = LinuxParser::Pids();
 
+  processes_ = {};
   for (auto pid : pids) {
     Process process = Process(pid);
     process.CpuUtilization();
