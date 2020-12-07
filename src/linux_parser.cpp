@@ -194,9 +194,25 @@ string LinuxParser::Command(int pid) {
   return line;
 }
 
-// TODO: Read and return the memory used by a process
+// Read and return the memory used by a process
 string LinuxParser::Ram(int pid) {
-  return to_string(pid);
+  string line, key, value;
+  std::ifstream stream(kProcDirectory + "/" + to_string(pid) + kStatusFilename);
+  if (stream.is_open()) {
+    while(std::getline(stream, line)) {
+      std::istringstream linestream(line);
+      linestream >> key >> value;
+      if (key == "VmSize:") {
+        break;
+      }
+    }
+  }
+
+  // Convert value to MB
+  if (value != "") {
+    return to_string(std::stoi(value) / 1000);
+  }
+
   return string();
 }
 
