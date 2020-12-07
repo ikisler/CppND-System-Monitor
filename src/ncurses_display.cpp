@@ -1,11 +1,13 @@
+#include "ncurses_display.h"
+
 #include <curses.h>
+
 #include <chrono>
 #include <string>
 #include <thread>
 #include <vector>
 
 #include "format.h"
-#include "ncurses_display.h"
 #include "system.h"
 
 using std::string;
@@ -94,6 +96,7 @@ void NCursesDisplay::Display(System& system, int n) {
       newwin(3 + n, x_max - 1, system_window->_maxy + 1, 0);
 
   while (1) {
+    werase(process_window);
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
     init_pair(2, COLOR_GREEN, COLOR_BLACK);
     box(system_window, 0, 0);
