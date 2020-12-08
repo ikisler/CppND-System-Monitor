@@ -7,24 +7,31 @@
 #include <string>
 #include <vector>
 
-#include "processor.h"
 #include "linux_parser.h"
+#include "processor.h"
 
-using std::vector;
 using std::string;
+using std::vector;
 
 float Processor::CalculateIdle(vector<string> values) {
-  return std::stof(values[LinuxParser::CPUStates::kIdle_]) + std::stof(values[LinuxParser::CPUStates::kIOwait_]);
+  return std::stof(values[LinuxParser::CPUStates::kIdle_]) +
+         std::stof(values[LinuxParser::CPUStates::kIOwait_]);
 }
 
 float Processor::CalculateNonIdle(vector<string> values) {
-  return std::stof(values[LinuxParser::CPUStates::kUser_]) + std::stof(values[LinuxParser::CPUStates::kNice_]) + std::stof(values[LinuxParser::CPUStates::kSystem_]) + std::stof(values[LinuxParser::CPUStates::kIRQ_]) + std::stof(values[LinuxParser::CPUStates::kSoftIRQ_]) + std::stof(values[LinuxParser::CPUStates::kSteal_]);
+  return std::stof(values[LinuxParser::CPUStates::kUser_]) +
+         std::stof(values[LinuxParser::CPUStates::kNice_]) +
+         std::stof(values[LinuxParser::CPUStates::kSystem_]) +
+         std::stof(values[LinuxParser::CPUStates::kIRQ_]) +
+         std::stof(values[LinuxParser::CPUStates::kSoftIRQ_]) +
+         std::stof(values[LinuxParser::CPUStates::kSteal_]);
 }
 
 // Return the aggregate CPU utilization
 float Processor::Utilization() {
   if (old_idle_ == 0 || old_non_idle_ == 0) {
-    // This branch is for when the program is initially started and we have no info to based our utilization on
+    // This branch is for when the program is initially started and we have no
+    // info to based our utilization on
     vector<string> old_values = LinuxParser::CpuUtilization();
     old_idle_ = CalculateIdle(old_values);
     old_non_idle_ = CalculateNonIdle(old_values);

@@ -1,9 +1,10 @@
+#include "linux_parser.h"
+
 #include <dirent.h>
 #include <unistd.h>
+
 #include <string>
 #include <vector>
-
-#include "linux_parser.h"
 
 using std::stof;
 using std::string;
@@ -67,27 +68,31 @@ vector<int> LinuxParser::Pids() {
 }
 
 // Read and return the system memory utilization
-// Returns the percentage of memory utilized as a float (so 50% used would return 0.5)
-// Calculates usage like the `free` command: total memory - free memory - buffer - cache
+// Returns the percentage of memory utilized as a float (so 50% used would
+// return 0.5) Calculates usage like the `free` command: total memory - free
+// memory - buffer - cache
 float LinuxParser::MemoryUtilization() {
   string line, key, value;
   vector<string> values;
   std::ifstream stream(kProcDirectory + kMeminfoFilename);
   if (stream.is_open()) {
-    while(std::getline(stream, line)) {
+    while (std::getline(stream, line)) {
       std::istringstream linestream(line);
       linestream >> key >> value;
       values.push_back(value);
       if (key == "Cached:") {
-          // Only need the first four lines, so getta outta here once we hit this line
-          break;
+        // Only need the first four lines, so getta outta here once we hit this
+        // line
+        break;
       }
     }
   }
 
   int intMemTotal = std::stoi(values[0]);
 
-  return float(intMemTotal - std::stoi(values[1]) - std::stoi(values[2]) - std::stoi(values[3])) / intMemTotal;
+  return float(intMemTotal - std::stoi(values[1]) - std::stoi(values[2]) -
+               std::stoi(values[3])) /
+         intMemTotal;
 }
 
 // Read and return the system uptime
@@ -105,14 +110,14 @@ long LinuxParser::UpTime() {
 
 // Read and return CPU utilization
 vector<string> LinuxParser::CpuUtilization() {
-// investigate CPUStates enum
+  // investigate CPUStates enum
   vector<string> values;
   string value, line;
   std::ifstream stream(kProcDirectory + kStatFilename);
   if (stream.is_open()) {
     std::getline(stream, line);
     std::istringstream linestream(line);
-    while(linestream >> value) {
+    while (linestream >> value) {
       if (value != "cpu") {
         values.push_back(value);
       }
@@ -135,7 +140,7 @@ float LinuxParser::ProcessCpuTimeUsage(int pid) {
   if (stream.is_open()) {
     std::getline(stream, line);
     std::istringstream linestream(line);
-    while(linestream >> value) {
+    while (linestream >> value) {
       // Need to get the 14 - 17th values from the file
       if (i >= 14) {
         sum += stof(value);
@@ -154,18 +159,21 @@ float LinuxParser::ProcessCpuTimeUsage(int pid) {
 
 // Read and return the total number of processes
 int LinuxParser::TotalProcesses() {
-  return std::stoi(LinuxParser::getValueFromFileWithKey(kProcDirectory + kStatFilename, "processes"));
+  return std::stoi(LinuxParser::getValueFromFileWithKey(
+      kProcDirectory + kStatFilename, "processes"));
 }
 
 // Read and return the number of running processes
 int LinuxParser::RunningProcesses() {
-  return std::stoi(LinuxParser::getValueFromFileWithKey(kProcDirectory + kStatFilename, "procs_running"));
+  return std::stoi(LinuxParser::getValueFromFileWithKey(
+      kProcDirectory + kStatFilename, "procs_running"));
 }
 
 // Read and return the command associated with a process
 string LinuxParser::Command(int pid) {
   string line;
-  std::ifstream stream(kProcDirectory + "/" + to_string(pid) + kCmdlineFilename);
+  std::ifstream stream(kProcDirectory + "/" + to_string(pid) +
+                       kCmdlineFilename);
   if (stream.is_open()) {
     std::getline(stream, line);
   }
@@ -174,7 +182,8 @@ string LinuxParser::Command(int pid) {
 
 // Read and return the memory used by a process
 string LinuxParser::Ram(int pid) {
-  string value = LinuxParser::getValueFromFileWithKey(kProcDirectory + "/" + to_string(pid) + kStatusFilename, "VmSize:");
+  string value = LinuxParser::getValueFromFileWithKey(
+      kProcDirectory + "/" + to_string(pid) + kStatusFilename, "VmSize:");
 
   // Convert value to MB
   if (value != "") {
@@ -186,7 +195,8 @@ string LinuxParser::Ram(int pid) {
 
 // Read and return the user ID associated with a process
 string LinuxParser::Uid(int pid) {
-  return LinuxParser::getValueFromFileWithKey(kProcDirectory + "/" + to_string(pid) + kStatusFilename, "Uid:");
+  return LinuxParser::getValueFromFileWithKey(
+      kProcDirectory + "/" + to_string(pid) + kStatusFilename, "Uid:");
 }
 
 // Read and return the user associated with a process
@@ -197,7 +207,7 @@ string LinuxParser::User(int pid) {
 
   std::ifstream stream(kPasswordPath);
   if (stream.is_open()) {
-    while(std::getline(stream, line)) {
+    while (std::getline(stream, line)) {
       std::replace(line.begin(), line.end(), ':', ' ');
       std::istringstream linestream(line);
       linestream >> username >> x >> uid;
@@ -212,28 +222,30 @@ string LinuxParser::User(int pid) {
 // Read and return the uptime of a process
 long LinuxParser::UpTime(int pid) {
   string line, uptime, value;
-  int const index_location_of_uptime_value = 22; // Indexed starting at 1, not 0
+  int const index_location_of_uptime_value =
+      22;  // Indexed starting at 1, not 0
   int i = 1;
 
   std::ifstream stream(kProcDirectory + "/" + to_string(pid) + kStatFilename);
   if (stream.is_open()) {
     std::getline(stream, line);
     std::istringstream linestream(line);
-    while(linestream >> value) {
+    while (linestream >> value) {
       if (i == index_location_of_uptime_value) {
-        return LinuxParser::UpTime() - (std::stoll(value) / sysconf(_SC_CLK_TCK));
+        return LinuxParser::UpTime() -
+               (std::stoll(value) / sysconf(_SC_CLK_TCK));
       }
       i++;
     }
   }
-  return 0; // shouldn't get here, but just in case
+  return 0;  // shouldn't get here, but just in case
 }
 
 string LinuxParser::getValueFromFileWithKey(string filepath, string key) {
   string line, keyFound, value;
   std::ifstream stream(filepath);
   if (stream.is_open()) {
-    while(std::getline(stream, line)) {
+    while (std::getline(stream, line)) {
       std::istringstream linestream(line);
       linestream >> keyFound >> value;
       if (keyFound == key) {
