@@ -12,6 +12,10 @@ using std::string;
 using std::to_string;
 using std::vector;
 
+Process::Process(int pid) {
+  pid_ = pid;
+}
+
 // Return this process's ID
 int Process::Pid() {
   return pid_;
@@ -26,8 +30,7 @@ int Process::Pid() {
   Retrieved 12/05/2020
 */
 float Process::CpuUtilization() {
-  cpu_ = LinuxParser::ProcessCpuTimeUsage(pid_) / UpTime();
-  return cpu_;
+  return LinuxParser::ProcessCpuTimeUsage(pid_) / UpTime();
 }
 
 // Return the command that generated this process
@@ -36,7 +39,7 @@ string Process::Command() {
 }
 
 // Return this process's memory utilization
-string Process::Ram() {
+string Process::Ram() const {
   return LinuxParser::Ram(pid_);
 }
 
@@ -52,5 +55,5 @@ long int Process::UpTime() {
 
 // Overload the "less than" comparison operator for Process objects
 bool Process::operator<(Process const& a) const {
-  return cpu_ > a.cpu_; // ">" is NOT a typo -- want to sort the processes in DESC not ASC order
+  return std::stoi(Ram()) > std::stoi(a.Ram()); // ">" is NOT a typo -- want to sort the processes in DESC not ASC order
 }

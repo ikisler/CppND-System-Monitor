@@ -23,9 +23,7 @@ vector<Process>& System::Processes() {
 
   processes_ = {};
   for (auto pid : pids) {
-    Process process = Process(pid);
-    process.CpuUtilization();
-    processes_.push_back(process);
+    processes_.push_back(Process(pid));
   }
 
   sort(processes_.begin(), processes_.end());
