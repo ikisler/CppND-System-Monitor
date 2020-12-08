@@ -18,7 +18,6 @@ float Processor::CalculateIdle(vector<string> values) {
 }
 
 float Processor::CalculateNonIdle(vector<string> values) {
-// USE enum LinuxParser::CPUStates for this
   return std::stof(values[LinuxParser::CPUStates::kUser_]) + std::stof(values[LinuxParser::CPUStates::kNice_]) + std::stof(values[LinuxParser::CPUStates::kSystem_]) + std::stof(values[LinuxParser::CPUStates::kIRQ_]) + std::stof(values[LinuxParser::CPUStates::kSoftIRQ_]) + std::stof(values[LinuxParser::CPUStates::kSteal_]);
 }
 

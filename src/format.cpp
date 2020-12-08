@@ -11,7 +11,6 @@ string Format::PadIntToTwoCharacters(int n) {
   return std::to_string(n);
 }
 
-// TODO: Complete this helper function
 // INPUT: Long int measuring seconds
 // OUTPUT: HH:MM:SS
 string Format::ElapsedTime(long seconds) {
