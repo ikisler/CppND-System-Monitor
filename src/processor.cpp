@@ -14,11 +14,12 @@ using std::vector;
 using std::string;
 
 float Processor::CalculateIdle(vector<string> values) {
-  return std::stof(values[3]) + std::stof(values[4]);
+  return std::stof(values[LinuxParser::CPUStates::kIdle_]) + std::stof(values[LinuxParser::CPUStates::kIOwait_]);
 }
 
 float Processor::CalculateNonIdle(vector<string> values) {
-  return std::stof(values[0]) + std::stof(values[1]) + std::stof(values[2]) + std::stof(values[5]) + std::stof(values[6]) + std::stof(values[7]);
+// USE enum LinuxParser::CPUStates for this
+  return std::stof(values[LinuxParser::CPUStates::kUser_]) + std::stof(values[LinuxParser::CPUStates::kNice_]) + std::stof(values[LinuxParser::CPUStates::kSystem_]) + std::stof(values[LinuxParser::CPUStates::kIRQ_]) + std::stof(values[LinuxParser::CPUStates::kSoftIRQ_]) + std::stof(values[LinuxParser::CPUStates::kSteal_]);
 }
 
 // Return the aggregate CPU utilization
