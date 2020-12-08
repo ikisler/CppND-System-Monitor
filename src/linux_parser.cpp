@@ -181,16 +181,16 @@ string LinuxParser::Command(int pid) {
 }
 
 // Read and return the memory used by a process
-string LinuxParser::Ram(int pid) {
+int LinuxParser::Ram(int pid) {
   string value = LinuxParser::getValueFromFileWithKey(
       kProcDirectory + "/" + to_string(pid) + kStatusFilename, "VmSize:");
 
   // Convert value to MB
   if (value != "") {
-    return to_string(std::stoi(value) / 1000);
+    return std::stoi(value) / 1000;
   }
 
-  return string();
+  return 0;
 }
 
 // Read and return the user ID associated with a process

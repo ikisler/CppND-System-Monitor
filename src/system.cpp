@@ -22,7 +22,9 @@ System::System() {
 }
 
 // Return the system's CPU
-Processor& System::Cpu() { return cpu_; }
+// Processor& System::Cpu() { return cpu_; }
+
+float System::CpuUtilization() { return cpu_.Utilization(); }
 
 // Return a container composed of the system's processes
 vector<Process>& System::Processes() {
@@ -41,7 +43,9 @@ vector<Process>& System::Processes() {
 std::string System::Kernel() { return kernel_; }
 
 // Return the system's memory utilization
-float System::MemoryUtilization() { return LinuxParser::MemoryUtilization(); }
+float System::MemoryUtilization() const {
+  return LinuxParser::MemoryUtilization();
+}
 
 // Return the operating system name
 std::string System::OperatingSystem() { return os_; }
@@ -53,4 +57,4 @@ int System::RunningProcesses() { return LinuxParser::RunningProcesses(); }
 int System::TotalProcesses() { return LinuxParser::TotalProcesses(); }
 
 // Return the number of seconds since the system started running
-long int System::UpTime() { return LinuxParser::UpTime(); }
+long System::UpTime() const { return LinuxParser::UpTime(); }
