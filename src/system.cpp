@@ -22,8 +22,6 @@ System::System() {
 }
 
 // Return the system's CPU
-// Processor& System::Cpu() { return cpu_; }
-
 float System::CpuUtilization() { return cpu_.Utilization(); }
 
 // Return a container composed of the system's processes

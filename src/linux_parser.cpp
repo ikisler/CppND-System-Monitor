@@ -69,30 +69,33 @@ vector<int> LinuxParser::Pids() {
 
 // Read and return the system memory utilization
 // Returns the percentage of memory utilized as a float (so 50% used would
-// return 0.5) Calculates usage like the `free` command: total memory - free
-// memory - buffer - cache
+// return 0.5)
+/*
+NOTE!  This is calculated based on the guide linked here:
+https://stackoverflow.com/questions/41224738/how-to-calculate-system-memory-usage-from-proc-meminfo-like-htop/41251290#41251290
+Retrieved on 12/08/2020
+*/
 float LinuxParser::MemoryUtilization() {
   string line, key, value;
-  vector<string> values;
+  int memTotal, memFree;
   std::ifstream stream(kProcDirectory + kMeminfoFilename);
   if (stream.is_open()) {
     while (std::getline(stream, line)) {
       std::istringstream linestream(line);
       linestream >> key >> value;
-      values.push_back(value);
-      if (key == "Cached:") {
-        // Only need the first four lines, so getta outta here once we hit this
+      if (key == "MemTotal:") {
+        memTotal = std::stoi(value);
+      } else if (key == "MemFree:") {
+        memFree = std::stoi(value);
+        // Only need the first two lines, so getta outta here once we hit this
         // line
         break;
       }
     }
   }
 
-  int intMemTotal = std::stoi(values[0]);
 
-  return float(intMemTotal - std::stoi(values[1]) - std::stoi(values[2]) -
-               std::stoi(values[3])) /
-         intMemTotal;
+  return float(memTotal - memFree) / memTotal;
 }
 
 // Read and return the system uptime
