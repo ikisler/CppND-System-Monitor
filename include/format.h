@@ -4,6 +4,7 @@
 #include <string>
 
 namespace Format {
+std::string PadIntToTwoCharacters(int n);
 std::string ElapsedTime(long times);  // TODO: See src/format.cpp
 };                                    // namespace Format
 

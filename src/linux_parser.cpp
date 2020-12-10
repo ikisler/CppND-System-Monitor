@@ -1,9 +1,10 @@
+#include "linux_parser.h"
+
 #include <dirent.h>
 #include <unistd.h>
+
 #include <string>
 #include <vector>
-
-#include "linux_parser.h"
 
 using std::stof;
 using std::string;
@@ -35,13 +36,13 @@ string LinuxParser::OperatingSystem() {
 
 // DONE: An example of how to read data from the filesystem
 string LinuxParser::Kernel() {
-  string os, kernel;
+  string os, version, kernel;
   string line;
   std::ifstream stream(kProcDirectory + kVersionFilename);
   if (stream.is_open()) {
     std::getline(stream, line);
     std::istringstream linestream(line);
-    linestream >> os >> kernel;
+    linestream >> os >> version >> kernel;
   }
   return kernel;
 }
@@ -66,50 +67,194 @@ vector<int> LinuxParser::Pids() {
   return pids;
 }
 
-// TODO: Read and return the system memory utilization
-float LinuxParser::MemoryUtilization() { return 0.0; }
+// Read and return the system memory utilization
+// Returns the percentage of memory utilized as a float (so 50% used would
+// return 0.5)
+/*
+NOTE!  This is calculated based on the guide linked here:
+https://stackoverflow.com/questions/41224738/how-to-calculate-system-memory-usage-from-proc-meminfo-like-htop/41251290#41251290
+Retrieved on 12/08/2020
+*/
+float LinuxParser::MemoryUtilization() {
+  string line, key, value;
+  int memTotal, memFree;
+  std::ifstream stream(kProcDirectory + kMeminfoFilename);
+  if (stream.is_open()) {
+    while (std::getline(stream, line)) {
+      std::istringstream linestream(line);
+      linestream >> key >> value;
+      if (key == "MemTotal:") {
+        memTotal = std::stoi(value);
+      } else if (key == "MemFree:") {
+        memFree = std::stoi(value);
+        // Only need the first two lines, so getta outta here once we hit this
+        // line
+        break;
+      }
+    }
+  }
 
-// TODO: Read and return the system uptime
-long LinuxParser::UpTime() { return 0; }
 
-// TODO: Read and return the number of jiffies for the system
-long LinuxParser::Jiffies() { return 0; }
+  return float(memTotal - memFree) / memTotal;
+}
 
-// TODO: Read and return the number of active jiffies for a PID
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::ActiveJiffies(int pid[[maybe_unused]]) { return 0; }
+// Read and return the system uptime
+long LinuxParser::UpTime() {
+  string uptime;
+  string line;
+  std::ifstream stream(kProcDirectory + kUptimeFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+    std::istringstream linestream(line);
+    linestream >> uptime;
+  }
+  return std::stoll(uptime);
+}
 
-// TODO: Read and return the number of active jiffies for the system
-long LinuxParser::ActiveJiffies() { return 0; }
+// Read and return CPU utilization
+vector<string> LinuxParser::CpuUtilization() {
+  // investigate CPUStates enum
+  vector<string> values;
+  string value, line;
+  std::ifstream stream(kProcDirectory + kStatFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+    std::istringstream linestream(line);
+    while (linestream >> value) {
+      if (value != "cpu") {
+        values.push_back(value);
+      }
+    }
+  }
+  return values;
+}
 
-// TODO: Read and return the number of idle jiffies for the system
-long LinuxParser::IdleJiffies() { return 0; }
+// Gets and sums values used for calculating CPU usage
+// utime
+// stime
+// cutime
+// cstime
+// Returns a float measured in SECONDS not clockticks
+float LinuxParser::ProcessCpuTimeUsage(int pid) {
+  string value, line;
+  int i = 1;
+  long sum;
+  std::ifstream stream(kProcDirectory + "/" + to_string(pid) + kStatFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+    std::istringstream linestream(line);
+    while (linestream >> value) {
+      // Need to get the 14 - 17th values from the file
+      if (i >= 14) {
+        sum += stof(value);
+      }
 
-// TODO: Read and return CPU utilization
-vector<string> LinuxParser::CpuUtilization() { return {}; }
+      // Not interested in any values after the 17th
+      if (i == 17) {
+        break;
+      }
+      i++;
+    }
+  }
 
-// TODO: Read and return the total number of processes
-int LinuxParser::TotalProcesses() { return 0; }
+  return sum / sysconf(_SC_CLK_TCK);
+}
 
-// TODO: Read and return the number of running processes
-int LinuxParser::RunningProcesses() { return 0; }
+// Read and return the total number of processes
+int LinuxParser::TotalProcesses() {
+  return std::stoi(LinuxParser::getValueFromFileWithKey(
+      kProcDirectory + kStatFilename, "processes"));
+}
 
-// TODO: Read and return the command associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Command(int pid[[maybe_unused]]) { return string(); }
+// Read and return the number of running processes
+int LinuxParser::RunningProcesses() {
+  return std::stoi(LinuxParser::getValueFromFileWithKey(
+      kProcDirectory + kStatFilename, "procs_running"));
+}
 
-// TODO: Read and return the memory used by a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Ram(int pid[[maybe_unused]]) { return string(); }
+// Read and return the command associated with a process
+string LinuxParser::Command(int pid) {
+  string line;
+  std::ifstream stream(kProcDirectory + "/" + to_string(pid) +
+                       kCmdlineFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+  }
+  return line;
+}
 
-// TODO: Read and return the user ID associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Uid(int pid[[maybe_unused]]) { return string(); }
+// Read and return the memory used by a process
+int LinuxParser::Ram(int pid) {
+  string value = LinuxParser::getValueFromFileWithKey(
+      kProcDirectory + "/" + to_string(pid) + kStatusFilename, "VmSize:");
 
-// TODO: Read and return the user associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::User(int pid[[maybe_unused]]) { return string(); }
+  // Convert value to MB
+  if (value != "") {
+    return std::stoi(value) / 1000;
+  }
 
-// TODO: Read and return the uptime of a process
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::UpTime(int pid[[maybe_unused]]) { return 0; }
+  return 0;
+}
+
+// Read and return the user ID associated with a process
+string LinuxParser::Uid(int pid) {
+  return LinuxParser::getValueFromFileWithKey(
+      kProcDirectory + "/" + to_string(pid) + kStatusFilename, "Uid:");
+}
+
+// Read and return the user associated with a process
+string LinuxParser::User(int pid) {
+  string line, username, x, uid, process_uid;
+
+  process_uid = LinuxParser::Uid(pid);
+
+  std::ifstream stream(kPasswordPath);
+  if (stream.is_open()) {
+    while (std::getline(stream, line)) {
+      std::replace(line.begin(), line.end(), ':', ' ');
+      std::istringstream linestream(line);
+      linestream >> username >> x >> uid;
+      if (uid == process_uid) {
+        return username;
+      }
+    }
+  }
+  return string();
+}
+
+// Read and return the uptime of a process
+long LinuxParser::UpTime(int pid) {
+  string line, uptime, value;
+  int const index_location_of_uptime_value =
+      22;  // Indexed starting at 1, not 0
+  int i = 1;
+
+  std::ifstream stream(kProcDirectory + "/" + to_string(pid) + kStatFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+    std::istringstream linestream(line);
+    while (linestream >> value) {
+      if (i == index_location_of_uptime_value) {
+        return LinuxParser::UpTime() -
+               (std::stoll(value) / sysconf(_SC_CLK_TCK));
+      }
+      i++;
+    }
+  }
+  return 0;  // shouldn't get here, but just in case
+}
+
+string LinuxParser::getValueFromFileWithKey(string filepath, string key) {
+  string line, keyFound, value;
+  std::ifstream stream(filepath);
+  if (stream.is_open()) {
+    while (std::getline(stream, line)) {
+      std::istringstream linestream(line);
+      linestream >> keyFound >> value;
+      if (keyFound == key) {
+        return value;
+      }
+    }
+  }
+  return string();
+}
